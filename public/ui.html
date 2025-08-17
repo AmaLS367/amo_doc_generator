@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Документы</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="main.css" rel="stylesheet">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="bar">
+      <div class="title">Генерация документа</div>
+      <div class="controls">
+        <label class="ctrl">
+          <span>Шаблон</span>
+          <select id="template">
+            <option value="order">Заказ-наряд</option>
+            <option value="act">Акт приёма-передачи</option>
+          </select>
+        </label>
+        <label class="ctrl w-120">
+          <span>Скидка, ₽</span>
+          <input id="discount" type="number" min="0" step="1" inputmode="numeric">
+        </label>
+      </div>
+    </header>
+
+    <section class="card">
+      <table class="grid" id="tbl">
+        <colgroup>
+            <col style="width:44px">
+            <col>
+            <col style="width:90px">
+            <col style="width:140px">
+            <col style="width:120px">
+            <col style="width:160px">
+            <col style="width:48px">
+        </colgroup>
+        <thead>
+            <tr>
+            <th>№</th>
+            <th class="left">Наименование работ, услуг</th>
+            <th>Кол-во</th>
+            <th>Цена, ₽</th>
+            <th>Скидка, %</th>
+            <th>Сумма, ₽</th>
+            <th></th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+            <tr>
+            <td class="left muted" colspan="5">Итого позиций: <span id="cnt">0</span></td>
+            <td class="right"><span id="sum">0</span></td>
+            <td></td>
+            </tr>
+            <tr>
+            <td class="left muted" colspan="5">С учётом скидки</td>
+            <td class="right"><span id="total">0</span></td>
+            <td></td>
+            </tr>
+            <tr>
+            <td class="left muted" colspan="5">Сумма прописью</td>
+            <td class="right" colspan="2"><span id="totalWords" class="words">—</span></td>
+            </tr>
+        </tfoot>
+        </table>
+
+      <div class="actions">
+        <button id="add" class="btn ghost">+</button>
+        <div class="spacer"></div>
+        <button id="gen" class="btn primary">Сформировать</button>
+        <a id="link" target="_blank" class="btn link" style="display:none">Открыть документ</a>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+</body>
+</html>

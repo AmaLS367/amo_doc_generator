@@ -1,0 +1,39 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore PHP-specific cache/log/temp files
+*.log
+*.cache
+*.tmp
+
+# Ignore Composer dependencies
+/vendor/
+
+# Ignore generated documents
+/documents/
+
+# Ignore local data/cache
+/data/cache/
+/data/*.json
+
+# Ignore sensitive configuration and tokens
+/config/token.json
+/config/config.php
+
+# Ignore IDE/project settings
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore OS-specific files
+ehthumbs.db
+Desktop.ini
+
+# Ignore node_modules if JS packages ever added
+node_modules/
+
+# Ignore build artifacts
+dist/
+build/

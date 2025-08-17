@@ -1,0 +1,12 @@
+{
+    "name": "salon98_ftp/amo_doc_generator",
+    "authors": [
+        {
+            "name": "Ama",
+            "email": "john@example.com"
+        }
+    ],
+    "require": {
+        "phpoffice/phpword": "^0.18.3"
+    }
+}
