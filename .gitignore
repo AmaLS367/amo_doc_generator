@@ -1,39 +1,81 @@
 # Ignore system files
 .DS_Store
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+*$RECYCLE.BIN/
+.Spotlight-V100
+.Trashes
 
 # Ignore PHP-specific cache/log/temp files
 *.log
 *.cache
 *.tmp
+*.bak
+*.old
+*.orig
+*.swp
+*.swo
+.php-cs-fixer.cache
+.php_cs.cache
+/.phpunit.result.cache
+/.phpunit.cache/
+/coverage/
 
-# Ignore Composer dependencies
+# Ignore Composer artifacts
 /vendor/
+composer.phar
 
-# Ignore generated documents
+# Ignore Node/Yarn artifacts
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+pnpm-lock.yaml
+package-lock.json
+
+# Ignore generated documents and Office lock files
 /documents/
+/*.docx
+/*.pdf
+/documents/**/*.tmp
+~$*.docx
+*.lock.readme.docx#
 
 # Ignore local data/cache
 /data/cache/
 /data/*.json
+/data/*.log
+/data/*.tmp
+/logs/
+/tmp/
 
 # Ignore sensitive configuration and tokens
 /config/token.json
 /config/config.php
+.env
+.env.*
 
 # Ignore IDE/project settings
 .idea/
 .vscode/
 *.sublime-project
 *.sublime-workspace
+*.iml
+.fleet/
 
-# Ignore OS-specific files
-ehthumbs.db
-Desktop.ini
-
-# Ignore node_modules if JS packages ever added
-node_modules/
-
-# Ignore build artifacts
+# Ignore build artifacts and archives
 dist/
 build/
+/storage/
+/cache/
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# Misc lock/helper directories
+.lock
+.lock.*
+.DS_Store?
+/.husky/

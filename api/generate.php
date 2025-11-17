@@ -7,6 +7,8 @@ date_default_timezone_set($config['timezone']);
 $DIR_MODE  = $config['dir_mode'];
 $FILE_MODE = $config['file_mode'];
 
+use AmoDocGenerator\DocumentDataBuilder;
+use AmoDocGenerator\Support\RubleFormatter;
 use PhpOffice\PhpWord\TemplateProcessor;
 
 // Directory setup / Пути к директориям
@@ -58,36 +60,10 @@ function amoRequest(string $url, array &$t, array $cfg, string $p): array{
   return $j;
 }
 
-// Morphing function for Russian words / Функция морфологии для русского языка
-// This function is used to correctly decline words based on the number (e.g., "руб
-function morph_ru($n,$f1,$f2,$f5){ $n=abs($n)%100; $n1=$n%10; if($n>10&&$n<20)return $f5; if($n1>1&&$n1<5)return $f2; if($n1==1)return $f1; return $f5; }
-function rublesToWords(int $n): string {
-    if ($n === 0) return 'ноль рублей';
-    $morph=function($n,$f1,$f2,$f5){$n=abs($n)%100;$n1=$n%10;if($n>10&&$n<20)return $f5;if($n1>1&&$n1<5)return $f2;if($n1==1)return $f1;return $f5;};
-    $w1=['','один','два','три','четыре','пять','шесть','семь','восемь','девять'];
-    $w1f=['','одна','две','три','четыре','пять','шесть','семь','восемь','девять'];
-    $w10=['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
-    $w2=['','десять','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'];
-    $w3=['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'];
-    $units=[['рубль','рубля','рублей',0],['тысяча','тысячи','тысяч',1],['миллион','миллиона','миллионов',0]];
-    $parts=[];$i=0;$t=$n;
-    while($t>0&&$i<count($units)){
-        $x=$t%1000;if($x){
-            $g=$units[$i][3];$s=[];
-            $s[]=$w3[intval($x/100)];
-            $y=$x%100;
-            if($y>=10&&$y<20){$s[]=$w10[$y-10];}
-            else{$s[]=$w2[intval($y/10)];$s[]=( $g?$w1f[$y%10]:$w1[$y%10] );}
-            $s[]=$morph($x,$units[$i][0],$units[$i][1],$units[$i][2]);
-            $parts[]=trim(implode(' ',array_filter($s)));
-        }
-        $t=intdiv($t,1000);$i++;
+if (!function_exists('rublesToWords')) {
+    function rublesToWords(int $n): string {
+        return RubleFormatter::toWords($n);
     }
-    $text=implode(' ',array_reverse($parts));
-    // если не добавилось слово про валюту (например, 4000 -> "четыре тысячи"), дописываем "рублей"
-    // if it did not add a word about the currency (for example, 4000 -> "four thousand"), we add "rubles"
-    if (!preg_match('/руб(ль|ля|лей)\b/u',$text)) $text.=' рублей';
-    return trim(preg_replace('/\s+/u',' ',$text));
 }
 
 
@@ -107,10 +83,6 @@ try{
   // If no contact found, use lead's phone if available
   $fields = $lead['custom_fields_values'] ?? [];
   $getCF = function($fields,$name){ foreach($fields as $f){ if(($f['field_name']??'')===$name) return $f['values'][0]['value']??''; } return ''; };
-
-  // Сумма и скидка / Total and discount
-  $sum = 0; foreach($products as $p){ $sum += (int)($p['price'] ?? 0); }
-  $total = max(0, $sum - $discount);
 
   // template path / путь к шаблону
   $tplDir  = rtrim($config['template_path'], '/');
@@ -151,60 +123,32 @@ try{
 
     // табличка услуг / services table
     if ($template === 'order' && count($products)) {
-        $tp->cloneRow('row_num', count($products)); // клон по базовому тегу / clone by base tag
+        $rows = DocumentDataBuilder::buildRows($products);
+        $tp->cloneRow('row_num', count($rows)); // клон по базовому тегу / clone by base tag
 
-        $sumGross = 0; $sumAfter = 0;
-        foreach ($products as $i=>$it) {
-            $n    = $i + 1;
-            $name = $it['name'] ?? '';
-            $qty  = (int)($it['qty'] ?? ($it['quantity'] ?? 1));
-            $unit = (int)($it['unit_price'] ?? (int)($it['price'] ?? 0) / max(1,$qty));
-            $gross = $unit * max(1,$qty);
-
-            $discP = (float)($it['discount_percent'] ?? 0);
-            $discR = (int)($it['discount'] ?? 0);
-            $after = $gross;
-            if ($discP > 0) $after = (int)round($gross * (1 - $discP/100));
-            if ($discR > 0) $after = max(0, $after - $discR);
-
-            $sumGross += $gross; $sumAfter += $after;
-
+        foreach ($rows as $row) {
+            $n = $row['index'];
             $tp->setValue("row_num#{$n}", $n);
-            $tp->setValue("услуга_название#{$n}", $name);
-            $tp->setValue("row_qty#{$n}", $qty);
-            $tp->setValue("row_price#{$n}", number_format($unit,0,',',' '));
-            $tp->setValue("row_discount#{$n}", $discP>0 ? rtrim(rtrim(number_format($discP,2,'.',''), '0'), '.') : ($discR>0 ? $discR : '-'));
-            $tp->setValue("row_sum#{$n}", number_format($after,0,',',' '));
+            $tp->setValue("услуга_название#{$n}", $row['name']);
+            $tp->setValue("row_qty#{$n}", $row['qty']);
+            $tp->setValue("row_price#{$n}", number_format((int)$row['unit_price'], 0, ',', ' '));
+            $tp->setValue("row_discount#{$n}", $row['discount_label']);
+            $tp->setValue("row_sum#{$n}", number_format((int)$row['net_sum'], 0, ',', ' '));
         }
     }
 
 
     // Итоги из products: поддержка unit_price+qty, price, скидок по строке / Totals from products: support for unit_price+qty, price, discounts per line
-    $sum_gross = 0;
-    $sum_after = 0;
-
-    foreach ($products as $it) {
-        $qty  = (int)($it['qty'] ?? ($it['quantity'] ?? 1));
-        $unit = (int)($it['unit_price'] ?? 0);
-        $gross = $unit ? $unit * max(1, $qty) : (int)($it['price'] ?? 0);
-
-        $discP = (float)($it['discount_percent'] ?? 0);
-        $discR = (int)($it['discount'] ?? 0);
-        $after = $gross;
-        if ($discP > 0) $after = (int)round($gross * (1 - $discP/100));
-        if ($discR > 0) $after = max(0, $after - $discR);
-
-        $sum_gross += $gross;
-        $sum_after += $after;
-    }
-
-    $global = (int)$discount;
-    $total  = max(0, $sum_after - $global);
+    $summary = DocumentDataBuilder::summarize($products, (int)$discount);
+    $sum_gross = $summary['sum_gross'];
+    $sum_after = $summary['sum_after'];
+    $global = $summary['discount'];
+    $total  = $summary['total'];
 
     $tp->setValue('Итого', $sum_gross);
     $tp->setValue('Скидка', $global);
     $tp->setValue('Всего к оплате', $total);
-    $tp->setValue('Количество наименований', count($products));
+    $tp->setValue('Количество наименований', $summary['count']);
     $tp->setValue('Сумма прописью', rublesToWords($total));
 
   $filename = "doc_{$leadId}_" . time() . ".docx";
